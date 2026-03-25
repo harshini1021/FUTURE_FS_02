@@ -21,6 +21,7 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -40,94 +41,67 @@ export default function Layout({ children }) {
   });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+    <div className="layout-root">
+      {/* Mobile Menu Toggle */}
+      <button 
+        className="mobile-menu-toggle glass"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {isSidebarOpen ? '✕' : '☰'}
+      </button>
+
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
-      <aside className="glass" style={{
-        width: '260px', 
-        borderRight: '1px solid var(--border-light)',
-        borderTop: 'none', borderBottom: 'none', borderLeft: 'none',
-        display: 'flex', flexDirection: 'column',
-        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
-        boxShadow: '10px 0 30px rgba(0,0,0,0.1)'
-      }}>
+      <aside className={`glass side-nav ${isSidebarOpen ? 'mobile-open' : ''}`}>
+        {/* Overlay for mobile */}
+        {isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+        )}
+        
         {/* Logo */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '24px', marginBottom: '16px',
-        }}>
-          <div style={{
-            width: '36px', height: '36px',
-            background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
-            borderRadius: '10px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: '18px', flexShrink: 0,
-            boxShadow: '0 4px 12px var(--accent-glow)'
-          }}>⚡</div>
-          <span style={{ fontFamily: 'var(--font-head)', fontSize: '20px', fontWeight: 800, letterSpacing: '0.5px', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            LeadFlow
-          </span>
+        <div className="nav-logo">
+          <div className="logo-icon">⚡</div>
+          <span className="logo-text">LeadFlow</span>
         </div>
 
         {/* Main nav */}
-        <div style={{ padding: '0 16px', flex: 1 }}>
-          <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px',
-            color: 'var(--text-muted)', padding: '0 12px', marginBottom: '12px', fontWeight: 600 }}>Main</p>
+        <div className="nav-links">
+          <p className="nav-section-label">Main</p>
 
           {NAV.map(({ to, icon, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
-              style={({ isActive }) => linkStyle(isActive)}
-              onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'var(--glass-bg-hover)'; e.currentTarget.style.color = 'var(--text-main)'; } }}
-              onMouseLeave={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
-              <span style={{ fontSize: '18px', width: '22px', textAlign: 'center', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>{icon}</span>
-              {label}
+              <span className="nav-icon">{icon}</span>
+              <span className="nav-label">{label}</span>
             </NavLink>
           ))}
 
-          <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px',
-            color: 'var(--text-muted)', padding: '0 12px', margin: '32px 0 12px', fontWeight: 600 }}>Admin</p>
+          <p className="nav-section-label">Admin</p>
 
           {NAV2.map(({ to, icon, label }) => (
             <NavLink
               key={to}
               to={to}
-              style={({ isActive }) => linkStyle(isActive)}
-              onMouseEnter={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'var(--glass-bg-hover)'; e.currentTarget.style.color = 'var(--text-main)'; } }}
-              onMouseLeave={e => { if (!e.currentTarget.classList.contains('active')) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; } }}
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
-              <span style={{ fontSize: '18px', width: '22px', textAlign: 'center', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>{icon}</span>
-              {label}
+              <span className="nav-icon">{icon}</span>
+              <span className="nav-label">{label}</span>
             </NavLink>
           ))}
         </div>
 
         {/* User footer */}
-        <div style={{ padding: '20px 16px', borderTop: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.1)' }}>
-          <div className="glass" style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '12px', borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-light)', transition: 'all .25s'
-          }}>
+        <div className="nav-footer">
+          <div className="user-profile glass">
             <Avatar name={user?.name || 'Admin'} size={36} radius="10px" />
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap',
-                overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>{user?.name || 'Admin'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role || 'User'}</div>
+            <div className="user-info">
+              <div className="user-name">{user?.name || 'Admin'}</div>
+              <div className="user-role">{user?.role || 'User'}</div>
             </div>
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              title="Logout"
-              style={{
-                background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: 'var(--red)',
-                cursor: 'pointer', fontSize: '16px', padding: '8px',
-                borderRadius: '8px', transition: 'all .2s', display: 'flex',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.transform = 'scale(1)'; }}
-            >
+            <button onClick={handleLogout} disabled={loggingOut} title="Logout" className="logout-btn">
               ⎋
             </button>
           </div>
@@ -135,7 +109,7 @@ export default function Layout({ children }) {
       </aside>
 
       {/* ── Main Content ────────────────────────────────────────────────────── */}
-      <main style={{ marginLeft: '260px', flex: 1, padding: '40px 48px', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      <main className="main-content">
         <div className="animate-fade-in">
           {children}
         </div>

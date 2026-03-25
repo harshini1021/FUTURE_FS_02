@@ -93,7 +93,7 @@ export default function Dashboard() {
           <Spinner size={36} />
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '24px', marginBottom: '36px' }}>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '24px', marginBottom: '36px' }}>
           <StatCard label="Total Leads"  value={ov?.total || 0}     color="var(--blue)"    icon="👥" sub="All time database" delay="0.1s" />
           <StatCard label="New Leads"    value={ov?.new || 0}       color="var(--accent2)" icon="✨" sub="Needs immediate contact" delay="0.2s" />
           <StatCard label="In Progress"  value={ov?.contacted || 0} color="var(--amber)"   icon="🔥" sub="Currently engaging" delay="0.3s" />
