@@ -37,13 +37,28 @@ export default function Signup() {
       return;
     }
     
+    // Check for complexity (uppercase + number) to match backend
+    const hasUpper = /[A-Z]/.test(form.password);
+    const hasLower = /[a-z]/.test(form.password);
+    const hasNumber = /\d/.test(form.password);
+    if (!hasUpper || !hasLower || !hasNumber) {
+      setError('Password must contain uppercase, lowercase, and a number');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       await register(form.name, form.email, form.password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to register account');
+      // If backend returns specific validation errors array, show the first one
+      const backEndErrors = err.response?.data?.errors;
+      if (backEndErrors && backEndErrors.length > 0) {
+        setError(backEndErrors[0].message);
+      } else {
+        setError(err.response?.data?.message || 'Failed to register account. Check your connection.');
+      }
     } finally {
       setLoading(false);
     }

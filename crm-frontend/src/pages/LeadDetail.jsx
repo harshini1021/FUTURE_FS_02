@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { leadsAPI } from '../services/api';
-import { Button, StatusBadge, SourceTag, Avatar, Spinner, Card, CardHeader, Modal, ToastContainer } from '../components/UI';
+import { Button, StatusBadge, SourceTag, Avatar, EmptyState, Spinner, Card, CardHeader, Modal, ToastContainer } from '../components/UI';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../context/AuthContext';
 

@@ -23,36 +23,55 @@ const seed = async () => {
     await connectDB();
     console.log('\n🌱 Starting database seed...\n');
 
-    // Clear existing data
-    await Promise.all([User.deleteMany(), Lead.deleteMany()]);
-    console.log('🗑  Cleared existing data');
+    // 1. Find or create admin user
+    let admin = await User.findOne({ role: 'admin' });
+    if (!admin) {
+      console.log('👤 No admin found, creating default admin...');
+      admin = await User.create({
+        name: 'Admin User',
+        email: 'admin@leadflow.com',
+        password: 'Password@123',
+        role: 'admin',
+      });
+    }
+    console.log(`👤 Using admin: ${admin.email}`);
 
-    // Create admin user
-    const admin = await User.create({
-      name: 'Admin User',
-      email: process.env.SEED_ADMIN_EMAIL || 'admin@leadflow.com',
-      password: process.env.SEED_ADMIN_PASSWORD || 'Admin@1234',
-      role: 'admin',
+    // 2. Prepare sample leads with random dates for the dashboard chart
+    const leadsWithOwner = [
+      { firstName: 'James', lastName: 'Wilson', email: 'j.wilson@brighttech.com', company: 'BrightTech Solutions', source: 'web', status: 'new', priority: 'high' },
+      { firstName: 'Sarah', lastName: 'Chen', email: 'schen@innovate.io', company: 'Innovate AI', source: 'referral', status: 'contacted', priority: 'medium' },
+      { firstName: 'Michael', lastName: 'Rodriguez', email: 'm.rod@globex.org', company: 'Globex Corp', source: 'social', status: 'qualified', priority: 'high' },
+      { firstName: 'Emma', lastName: 'Thompson', email: 'emma.t@nexus.net', company: 'Nexus Logistics', source: 'cold', status: 'new', priority: 'low' },
+      { firstName: 'David', lastName: 'Kim', email: 'david.kim@quantum.co', company: 'Quantum Systems', source: 'email', status: 'converted', priority: 'medium' },
+      { firstName: 'Olivia', lastName: 'Garcia', email: 'olivia@pixelperfect.com', company: 'PixelPerfect Design', source: 'web', status: 'contacted', priority: 'high' },
+      { firstName: 'William', lastName: 'Brown', email: 'w.brown@steelworks.com', company: 'Steelworks Manufacturing', source: 'referral', status: 'lost', priority: 'low' },
+      { firstName: 'Sophia', lastName: 'Patel', email: 'spatel@zenith.edu', company: 'Zenith Education', source: 'social', status: 'new', priority: 'medium' },
+      { firstName: 'Lucas', lastName: 'Müller', email: 'lucas.m@berlintech.de', company: 'BerlinTech', source: 'web', status: 'qualified', priority: 'high' },
+      { firstName: 'Mia', lastName: 'Davis', email: 'mia.d@cloudscale.com', company: 'CloudScale Inc', source: 'cold', status: 'contacted', priority: 'medium' },
+      { firstName: 'Alexander', lastName: 'Wright', email: 'alex@wrightlegal.com', company: 'Wright Legal Group', source: 'referral', status: 'converted', priority: 'medium' },
+      { firstName: 'Isabella', lastName: 'Lopez', email: 'isabella@fiestafoods.com', company: 'Fiesta Foods', source: 'social', status: 'new', priority: 'low' },
+      { firstName: 'Ethan', lastName: 'Hunt', email: 'ethan.h@impossible.org', company: 'Impossible Missions', source: 'web', status: 'lost', priority: 'high' },
+      { firstName: 'Charlotte', lastName: 'Evans', email: 'charlotte@evansrealty.com', company: 'Evans Realty', source: 'email', status: 'contacted', priority: 'medium' },
+      { firstName: 'Noah', lastName: 'Miller', email: 'noah@craftbrew.co', company: 'CraftBrew Co', source: 'referral', status: 'new', priority: 'medium' }
+    ].map(l => {
+      const daysAgo = Math.floor(Math.random() * 8); // Random date in last 7 days
+      const date = new Date();
+      date.setDate(date.getDate() - daysAgo);
+      
+      return {
+        ...l,
+        assignedTo: admin._id,
+        createdAt: date,
+        updatedAt: date,
+        statusHistory: [{ from: null, to: l.status, changedBy: admin._id, changedByName: admin.name, createdAt: date }],
+        notes: l.status !== 'new' ? [{ text: 'Follow-up call completed.', addedBy: admin._id, addedByName: admin.name, createdAt: date }] : [],
+      };
     });
-    console.log(`👤 Admin created: ${admin.email} / password: ${process.env.SEED_ADMIN_PASSWORD || 'Admin@1234'}`);
-
-    // Create sample leads (assigned to admin)
-    const leadsWithOwner = sampleLeads.map(l => ({
-      ...l,
-      assignedTo: admin._id,
-      statusHistory: [{ from: null, to: l.status, changedBy: admin._id, changedByName: admin.name }],
-      notes: l.status !== 'new' ? [{ text: 'Initial follow-up completed.', addedBy: admin._id, addedByName: admin.name }] : [],
-    }));
 
     const leads = await Lead.insertMany(leadsWithOwner);
-    console.log(`📋 ${leads.length} sample leads created`);
+    console.log(`📋 ${leads.length} sample leads created successfully!`);
 
     console.log('\n✅ Seed complete!\n');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`  Admin Email:    ${admin.email}`);
-    console.log(`  Admin Password: ${process.env.SEED_ADMIN_PASSWORD || 'Admin@1234'}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
     process.exit(0);
   } catch (err) {
     console.error('❌ Seed failed:', err.message);

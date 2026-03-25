@@ -20,6 +20,9 @@ connectDB();
 // ─── CREATE APP ───────────────────────────────────────────────────────────────
 const app = express();
 
+// Trust proxy (required for rate limiting behind proxies like Railway/Vercel)
+app.set('trust proxy', 1);
+
 // ─── SECURITY MIDDLEWARE ──────────────────────────────────────────────────────
 
 // Set security HTTP headers
@@ -27,10 +30,10 @@ app.use(helmet());
 
 // CORS — allow requests from frontend
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'http://localhost:5173', // Vite dev server
-  ],
+  origin: function (origin, callback) {
+    // Dynamically allow any origin (perfect for Vercel deployments and local testing)
+    callback(null, true);
+  },
   credentials: true, // allow cookies
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],

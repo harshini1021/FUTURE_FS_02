@@ -19,10 +19,11 @@ const sendTokenResponse = async (user, statusCode, res, message = 'Success') => 
   await user.save({ validateBeforeSave: false });
 
   // Cookie options
+  const isProd = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax', // Use 'none' for cross-domain in prod
   };
 
   res
