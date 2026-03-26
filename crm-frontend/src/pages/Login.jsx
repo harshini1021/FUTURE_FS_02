@@ -41,14 +41,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div className="auth-container">
       {/* Background Orbs */}
       <div className="animate-float" style={{
         position: 'absolute', top: '10%', left: '15%',
@@ -63,18 +56,9 @@ export default function Login() {
         filter: 'blur(60px)', pointerEvents: 'none', animationDelay: '-3s'
       }} />
 
-      <div className="glass-card animate-fade-in" style={{
-        width: '100%', maxWidth: '1000px', display: 'flex',
-        borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.5)', zIndex: 10
-      }}>
+      <div className="auth-card animate-fade-in">
         {/* Left Side: Branding */}
-        <div style={{
-          flex: '1.2', padding: '60px', position: 'relative',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)',
-          borderRight: '1px solid rgba(255,255,255,0.05)',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center'
-        }}>
+        <div className="auth-sidebar">
           {/* Grid texture */}
           <div style={{
             position: 'absolute', inset: 0,
@@ -125,10 +109,7 @@ export default function Login() {
         </div>
 
         {/* Right Side: Login Form */}
-        <div style={{
-          flex: '1', padding: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(20px)'
-        }}>
+        <div className="auth-form-container">
           <div style={{ maxWidth: '360px', width: '100%', margin: '0 auto' }}>
             <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '28px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.5px' }}>
               Welcome back
@@ -165,7 +146,7 @@ export default function Login() {
                 }}>Email Address</label>
                 <input
                   name="email"
-                  type="email"
+                  type="text"
                   placeholder="admin@leadflow.com"
                   value={form.email}
                   onChange={handleChange}

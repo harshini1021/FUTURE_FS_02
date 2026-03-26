@@ -23,18 +23,27 @@ const seed = async () => {
     await connectDB();
     console.log('\n🌱 Starting database seed...\n');
 
-    // 1. Find or create admin user
-    let admin = await User.findOne({ role: 'admin' });
+    // 0. Clear existing leads
+    await Lead.deleteMany({});
+    console.log('🗑️ Existing leads cleared.');
+
+    // 1. Find or create specific demo admin user
+    let admin = await User.findOne({ email: 'admin@leadflow.com' });
     if (!admin) {
-      console.log('👤 No admin found, creating default admin...');
+      console.log('👤 Demo admin not found, creating...');
       admin = await User.create({
         name: 'Admin User',
         email: 'admin@leadflow.com',
-        password: 'Password@123',
+        password: 'Admin@1234',
         role: 'admin',
       });
+    } else {
+      console.log('👤 Demo admin exists, resetting password for consistency...');
+      admin.password = 'Admin@1234';
+      admin.role = 'admin'; // ensure it's admin
+      await admin.save();
     }
-    console.log(`👤 Using admin: ${admin.email}`);
+    console.log(`👤 Demo admin ready: ${admin.email}`);
 
     // 2. Prepare sample leads with random dates for the dashboard chart
     const leadsWithOwner = [
@@ -60,6 +69,7 @@ const seed = async () => {
       
       return {
         ...l,
+        leadValue: Math.floor(Math.random() * 90000) + 10000, // Range: 10k - 100k
         assignedTo: admin._id,
         createdAt: date,
         updatedAt: date,

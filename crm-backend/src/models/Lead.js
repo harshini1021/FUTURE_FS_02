@@ -119,6 +119,10 @@ const leadSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    leadValue: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

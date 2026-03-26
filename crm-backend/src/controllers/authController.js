@@ -182,3 +182,17 @@ exports.changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─── GET ALL USERS ─────────────────────────────────────────────────────────────
+
+exports.getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({ isActive: true }).select('name email role');
+    res.status(200).json({
+      success: true,
+      data: { users },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

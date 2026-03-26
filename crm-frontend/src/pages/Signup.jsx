@@ -32,17 +32,8 @@ export default function Signup() {
       setError('Passwords do not match');
       return;
     }
-    if (form.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-    
-    // Check for complexity (uppercase + number) to match backend
-    const hasUpper = /[A-Z]/.test(form.password);
-    const hasLower = /[a-z]/.test(form.password);
-    const hasNumber = /\d/.test(form.password);
-    if (!hasUpper || !hasLower || !hasNumber) {
-      setError('Password must contain uppercase, lowercase, and a number');
+    if (form.password.length < 3) {
+      setError('Password must be at least 3 characters');
       return;
     }
     
@@ -65,14 +56,7 @@ export default function Signup() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
+    <div className="auth-container">
       {/* Background Orbs */}
       <div className="animate-float" style={{
         position: 'absolute', top: '5%', right: '10%',
@@ -87,18 +71,9 @@ export default function Signup() {
         filter: 'blur(60px)', pointerEvents: 'none', animationDelay: '-3s'
       }} />
 
-      <div className="glass-card animate-fade-in" style={{
-        width: '100%', maxWidth: '1000px', display: 'flex',
-        borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.5)', zIndex: 10
-      }}>
+      <div className="auth-card animate-fade-in">
         {/* Left Side: Branding */}
-        <div style={{
-          flex: '1.2', padding: '60px', position: 'relative',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)',
-          borderRight: '1px solid rgba(255,255,255,0.05)',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center'
-        }}>
+        <div className="auth-sidebar">
           {/* Grid texture */}
           <div style={{
             position: 'absolute', inset: 0,
@@ -149,10 +124,7 @@ export default function Signup() {
         </div>
 
         {/* Right Side: Signup Form */}
-        <div style={{
-          flex: '1', padding: '60px', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(20px)'
-        }}>
+        <div className="auth-form-container">
           <div style={{ maxWidth: '360px', width: '100%', margin: '0 auto' }}>
             <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '28px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.5px' }}>
               Create an Account
@@ -202,7 +174,7 @@ export default function Signup() {
                 }}>Email Address</label>
                 <input
                   name="email"
-                  type="email"
+                  type="text"
                   placeholder="admin@leadflow.com"
                   value={form.email}
                   onChange={handleChange}
@@ -228,7 +200,7 @@ export default function Signup() {
                   <input
                     name="password"
                     type={showPass ? 'text' : 'password'}
-                    placeholder="Min 8 chars"
+                    placeholder="Min 3 chars"
                     value={form.password}
                     onChange={handleChange}
                     autoComplete="new-password"

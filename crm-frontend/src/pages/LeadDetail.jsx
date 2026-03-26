@@ -122,6 +122,17 @@ export default function LeadDetail() {
                     {lead.company || 'No company'} <span style={{ padding: '0 8px', color: 'var(--border-light)' }}>|</span> <SourceTag source={lead.source} />
                   </div>
                   <StatusBadge status={lead.status} />
+                  {lead.tags && lead.tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+                      {lead.tags.map(tag => (
+                        <span key={tag} style={{
+                          fontSize: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff',
+                          padding: '4px 10px', borderRadius: '6px', textTransform: 'uppercase', fontWeight: 700,
+                          border: '1px solid rgba(255,255,255,0.1)', letterSpacing: '0.5px'
+                        }}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -148,7 +159,10 @@ export default function LeadDetail() {
                     { label: 'Phone',    value: lead.phone || '—' },
                     { label: 'Company',  value: lead.company || '—' },
                     { label: 'Priority', value: lead.priority?.toUpperCase() || 'MEDIUM' },
-                    { label: 'Added',    value: new Date(lead.createdAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
+                    { label: 'Assigned To', value: lead.assignedTo?.name || 'Unassigned' },
+                    { label: 'Lead Value', value: `₹${(lead.leadValue || 0).toLocaleString('en-IN')}` },
+                    { label: 'Follow-up', value: lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'None scheduled' },
+                    { label: 'Added',    value: new Date(lead.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) },
                     { label: 'Updated',  value: new Date(lead.updatedAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
                   ].map(({ label, value }) => (
                     <div key={label} className="glass" style={{ padding: '16px 20px', borderRadius: '12px' }}>

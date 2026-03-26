@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { leadsAPI } from '../services/api';
+import { leadsAPI, authAPI } from '../services/api';
 import { Button, Input, Select, Textarea, Card, Spinner, ToastContainer } from '../components/UI';
 import { useToast } from '../hooks/useToast';
 
@@ -11,6 +11,8 @@ const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '',
   company: '', message: '', source: 'web', status: 'new',
   priority: 'medium', initialNote: '',
+  assignedTo: '', tags: '', followUpDate: '',
+  leadValue: 0,
 };
 
 export default function LeadForm() {
@@ -20,9 +22,22 @@ export default function LeadForm() {
   const { toasts, success, error: toastError } = useToast();
 
   const [form, setForm] = useState(EMPTY);
+  const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await authAPI.getUsers();
+        setUsers(data.data.users || []);
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -36,6 +51,10 @@ export default function LeadForm() {
           company: l.company || '', message: l.message || '',
           source: l.source || 'web', status: l.status || 'new',
           priority: l.priority || 'medium', initialNote: '',
+          assignedTo: l.assignedTo || '',
+          tags: (l.tags || []).join(', '),
+          followUpDate: l.followUpDate ? new Date(l.followUpDate).toISOString().split('T')[0] : '',
+          leadValue: l.leadValue || 0,
         });
       } catch {
         toastError('Failed to load lead');
@@ -66,14 +85,21 @@ export default function LeadForm() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
+    const payload = {
+      ...form,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      assignedTo: form.assignedTo || null,
+      followUpDate: form.followUpDate || null,
+    };
+
     setLoading(true);
     try {
       if (isEdit) {
-        await leadsAPI.update(id, form);
+        await leadsAPI.update(id, payload);
         success('Lead updated!');
         setTimeout(() => navigate(`/leads/${id}`), 1000);
       } else {
-        const { data } = await leadsAPI.create(form);
+        const { data } = await leadsAPI.create(payload);
         success('Lead created!');
         setTimeout(() => navigate(`/leads/${data.data.lead._id}`), 1000);
       }
@@ -137,6 +163,12 @@ export default function LeadForm() {
               onChange={handleChange} placeholder="e.g. Tech Solutions" />
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Input label="Lead Value (₹)" name="leadValue" type="number" value={form.leadValue}
+              onChange={handleChange} placeholder="e.g. 50000" />
+            <div /> {/* Spacer */}
+          </div>
+
           <Textarea label="Message / Enquiry" name="message" value={form.message}
             onChange={handleChange} placeholder="What did they enquire about?" />
 
@@ -165,6 +197,22 @@ export default function LeadForm() {
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </Select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+            <Select label="Assign To" name="assignedTo" value={form.assignedTo} onChange={handleChange}>
+              <option value="">Unassigned</option>
+              {users.map(u => (
+                <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
+              ))}
+            </Select>
+            <Input label="Follow-up Reminder" name="followUpDate" type="date" value={form.followUpDate}
+              onChange={handleChange} />
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <Input label="Tags (Comma separated)" name="tags" value={form.tags}
+              onChange={handleChange} placeholder="e.g. VIP, Q2-Lead, Urgent" />
           </div>
 
           {!isEdit && (

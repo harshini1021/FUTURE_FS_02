@@ -137,6 +137,31 @@ export default function LeadsList() {
             <option value="firstName">Name A-Z</option>
             <option value="-firstName">Name Z-A</option>
           </select>
+
+          {/* Date Filters */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '0 12px', height: '40px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>FROM</span>
+              <input 
+                type="date"
+                value={params.startDate || ''}
+                onChange={e => updateParams({ startDate: e.target.value || undefined })}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: '13px', outline: 'none', cursor: 'pointer' }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '0 12px', height: '40px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>TO</span>
+              <input 
+                type="date"
+                value={params.endDate || ''}
+                onChange={e => updateParams({ endDate: e.target.value || undefined })}
+                style={{ background: 'none', border: 'none', color: '#fff', fontSize: '13px', outline: 'none', cursor: 'pointer' }}
+              />
+            </div>
+            {(params.startDate || params.endDate) && (
+              <Button size="sm" variant="ghost" onClick={() => updateParams({ startDate: undefined, endDate: undefined })} style={{ color: 'var(--red)', padding: '0 8px' }}>✕</Button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -153,7 +178,7 @@ export default function LeadsList() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Lead', 'Company', 'Source', 'Status', 'Date', 'Actions'].map(h => (
+                  {['Lead', 'Value', 'Company', 'Source', 'Status', 'Date', 'Actions'].map(h => (
                     <th key={h} style={{
                       textAlign: 'left', padding: '14px 24px', fontSize: '12px',
                       textTransform: 'uppercase', letterSpacing: '1px',
@@ -182,6 +207,12 @@ export default function LeadsList() {
                           <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{lead.email}</div>
                         </div>
                       </div>
+                    </td>
+
+                    <td style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-light)',
+                      fontSize: '14px', color: 'var(--accent2)', fontWeight: 700 }}
+                      onClick={() => navigate(`/leads/${lead._id}`)}>
+                      ₹{(lead.leadValue || 0).toLocaleString('en-IN')}
                     </td>
 
                     <td style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-light)',

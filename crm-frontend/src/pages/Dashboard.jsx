@@ -52,6 +52,54 @@ const SOURCE_COLORS = {
   other: '#64748b'
 };
 
+// ─── ACTIVITY ITEM ────────────────────────────────────────────────────────
+const ActivityItem = ({ act, delay = '0s' }) => {
+  const navigate = useNavigate();
+  const isStatus = act.type === 'status_change';
+  
+  return (
+    <div className="glass-hover" style={{ 
+      padding: '12px 16px', borderRadius: '10px', marginBottom: '8px',
+      display: 'flex', gap: '12px', alignItems: 'flex-start',
+      animation: `fadeIn 0.4s ease backwards ${delay}`, transition: 'all 0.2s'
+    }}>
+      <div style={{ 
+        width: '32px', height: '32px', borderRadius: '8px', 
+        background: isStatus ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0,
+        border: `1px solid ${isStatus ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
+      }}>
+        {isStatus ? '🔄' : '📝'}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '13px', lineHeight: 1.4 }}>
+          <strong style={{ color: '#fff' }}>{act.user}</strong> 
+          {isStatus ? ' updated status of ' : ' added a note to '}
+          <span 
+            onClick={() => navigate(`/leads/${act.leadId}`)}
+            style={{ color: 'var(--accent)', cursor: 'pointer', fontWeight: 600 }}
+          >{act.leadName}</span>
+        </div>
+        {isStatus ? (
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{act.from || 'none'}</span>
+            <span>→</span>
+            <strong style={{ color: 'var(--accent2)' }}>{act.to}</strong>
+          </div>
+        ) : (
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic', 
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            "{act.text}"
+          </div>
+        )}
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>
+          {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(act.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const { stats, loading: statsLoading } = useStats();
   const { leads: recentLeads, loading: leadsLoading } = useLeads({ limit: 5, sortBy: '-createdAt' });
@@ -59,6 +107,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const ov = stats?.overview;
+  const recentActivity = stats?.recentActivity || [];
 
   // Format daily data for AreaChart
   const dailyData = stats?.leadsPerDay || [];
@@ -93,8 +142,9 @@ export default function Dashboard() {
           <Spinner size={36} />
         </div>
       ) : (
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '24px', marginBottom: '36px' }}>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '24px', marginBottom: '36px' }}>
           <StatCard label="Total Leads"  value={ov?.total || 0}     color="var(--blue)"    icon="👥" sub="All time database" delay="0.1s" />
+          <StatCard label="Pipeline Value" value={`₹${(ov?.totalPipelineValue || 0).toLocaleString('en-IN')}`} color="var(--purple)" icon="💰" sub="Projected revenue" delay="0.15s" />
           <StatCard label="New Leads"    value={ov?.new || 0}       color="var(--accent2)" icon="✨" sub="Needs immediate contact" delay="0.2s" />
           <StatCard label="In Progress"  value={ov?.contacted || 0} color="var(--amber)"   icon="🔥" sub="Currently engaging" delay="0.3s" />
           <StatCard label="Converted"    value={ov?.converted || 0} color="var(--green)"   icon="🏆" sub={`${ov?.conversionRate || '0%'} success rate`} delay="0.4s" />
@@ -173,68 +223,90 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Recent Leads Row */}
-      <Card className="glass-card" style={{ animation: 'fadeIn 0.5s ease backwards 0.4s' }}>
-        <CardHeader>
-          <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '18px', fontWeight: 700 }}>Recent Pipeline Activity</h2>
-          <Button size="sm" variant="ghost" onClick={() => navigate('/leads')} style={{ color: 'var(--accent)' }}>View all leads →</Button>
-        </CardHeader>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '24px', marginBottom: '36px' }}>
+        {/* Recent Leads Row */}
+        <Card className="glass-card" style={{ animation: 'fadeIn 0.5s ease backwards 0.4s' }}>
+          <CardHeader>
+            <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '18px', fontWeight: 700 }}>Recent Pipeline Activity</h2>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/leads')} style={{ color: 'var(--accent)' }}>View all →</Button>
+          </CardHeader>
 
-        {leadsLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Spinner size={28} /></div>
-        ) : recentLeads.length === 0 ? (
-          <EmptyState icon="📬" title="Your inbox is empty" message="Create your first lead or wait for new form submissions." />
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['Lead Name', 'Email Address', 'Source', 'Status', 'Date Added'].map(h => (
-                    <th key={h} style={{
-                      textAlign: 'left', padding: '16px 24px', fontSize: '12px',
-                      textTransform: 'uppercase', letterSpacing: '1.5px',
-                      color: 'var(--text-muted)', fontWeight: 700,
-                      background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-light)',
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentLeads.map((lead, i) => (
-                  <tr
-                    key={lead._id}
-                    onClick={() => navigate(`/leads/${lead._id}`)}
-                    style={{ cursor: 'pointer', transition: 'background .2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-light)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <Avatar name={lead.fullName || `${lead.firstName} ${lead.lastName}`} size={42} radius="12px" />
-                        <div style={{ fontWeight: 600, fontSize: '15px', color: '#fff' }}>
-                          {lead.firstName} {lead.lastName}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '14px' }}>
-                      {lead.email}
-                    </td>
-                    <td style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-light)' }}>
-                      <SourceTag source={lead.source} />
-                    </td>
-                    <td style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-light)' }}>
-                      <StatusBadge status={lead.status} />
-                    </td>
-                    <td style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 500 }}>
-                      {new Date(lead.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </td>
+          {leadsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Spinner size={28} /></div>
+          ) : recentLeads.length === 0 ? (
+            <EmptyState icon="📬" title="Your inbox is empty" message="Create your first lead." />
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Lead Name', 'Value', 'Source', 'Status', 'Date'].map(h => (
+                      <th key={h} style={{
+                        textAlign: 'left', padding: '16px 24px', fontSize: '11px',
+                        textTransform: 'uppercase', letterSpacing: '1.5px',
+                        color: 'var(--text-muted)', fontWeight: 700,
+                        background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-light)',
+                      }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentLeads.map((lead, i) => (
+                    <tr
+                      key={lead._id}
+                      onClick={() => navigate(`/leads/${lead._id}`)}
+                      style={{ cursor: 'pointer', transition: 'background .2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '14px 24px', borderBottom: '1px solid var(--border-light)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <Avatar name={`${lead.firstName} ${lead.lastName}`} size={32} radius="8px" />
+                          <div style={{ fontWeight: 600, fontSize: '14px', color: '#fff' }}>
+                            {lead.firstName} {lead.lastName}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 24px', borderBottom: '1px solid var(--border-light)' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--accent2)' }}>
+                          ₹{(lead.leadValue || 0).toLocaleString('en-IN')}
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 24px', borderBottom: '1px solid var(--border-light)' }}>
+                        <SourceTag source={lead.source} />
+                      </td>
+                      <td style={{ padding: '14px 24px', borderBottom: '1px solid var(--border-light)' }}>
+                        <StatusBadge status={lead.status} />
+                      </td>
+                      <td style={{ padding: '14px 24px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)', fontSize: '13px' }}>
+                        {new Date(lead.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Activity Feed */}
+        <Card className="glass-card" style={{ animation: 'fadeIn 0.5s ease backwards 0.5s', display: 'flex', flexDirection: 'column' }}>
+          <CardHeader>
+            <h2 style={{ fontFamily: 'var(--font-head)', fontSize: '18px', fontWeight: 700 }}>Action History</h2>
+          </CardHeader>
+          <div style={{ padding: '20px', flex: 1, overflowY: 'auto', maxHeight: '440px' }}>
+            {statsLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Spinner /></div>
+            ) : recentActivity.length === 0 ? (
+              <EmptyState icon="📜" title="No history yet" message="Activities will appear as your team works." />
+            ) : (
+              recentActivity.map((act, i) => (
+                <ActivityItem key={i} act={act} delay={`${0.1 * i}s`} />
+              ))
+            )}
           </div>
-        )}
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

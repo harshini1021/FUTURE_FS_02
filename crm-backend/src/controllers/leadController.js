@@ -6,14 +6,21 @@ const { AppError } = require('../middleware/errorHandler');
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-const buildQuery = (queryParams) => {
+const buildQuery = (queryParams, userId) => {
   const filter = { isArchived: false };
   const { status, source, priority, assignedTo, search, startDate, endDate } = queryParams;
 
   if (status) filter.status = status;
   if (source) filter.source = source;
   if (priority) filter.priority = priority;
-  if (assignedTo) filter.assignedTo = assignedTo;
+  
+  // Enforce user-specific filtering unless it's a specific assignedTo request
+  // (In our case, we want users to see only their own leads by default)
+  if (assignedTo) {
+    filter.assignedTo = assignedTo;
+  } else if (userId) {
+    filter.assignedTo = userId;
+  }
 
   // Date range filter
   if (startDate || endDate) {
@@ -39,7 +46,7 @@ exports.getLeads = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const sortBy = req.query.sortBy || '-createdAt';
 
-    const filter = buildQuery(req.query);
+    const filter = buildQuery(req.query, req.user._id);
 
     const [leads, total] = await Promise.all([
       Lead.find(filter)
@@ -275,22 +282,22 @@ exports.deleteNote = async (req, res, next) => {
 
 exports.getDashboardStats = async (req, res, next) => {
   try {
-    const [statusStats, sourceStats, dailyStats, recentLeads, totalLeads] = await Promise.all([
-      // Count by status
+    // Last 5 leads
+    const [statusStats, sourceStats, dailyStats, recentLeads, totalLeads, recentActivity, valueStats] = await Promise.all([
+      // ... existing aggregates ...
       Lead.aggregate([
-        { $match: { isArchived: false } },
+        { $match: { isArchived: false, assignedTo: req.user._id } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
-      // Count by source
       Lead.aggregate([
-        { $match: { isArchived: false } },
+        { $match: { isArchived: false, assignedTo: req.user._id } },
         { $group: { _id: '$source', count: { $sum: 1 } } },
       ]),
-      // Daily leads (last 7 days)
       Lead.aggregate([
         { 
           $match: { 
             isArchived: false, 
+            assignedTo: req.user._id,
             createdAt: { $gte: new Date(new Date().setDate(new Date().getDate() - 7)) } 
           } 
         },
@@ -302,13 +309,62 @@ exports.getDashboardStats = async (req, res, next) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      // Last 5 leads
-      Lead.find({ isArchived: false })
+      Lead.find({ isArchived: false, assignedTo: req.user._id })
         .sort('-createdAt')
         .limit(5)
-        .select('firstName lastName email status source createdAt')
+        .select('firstName lastName email status source leadValue createdAt')
         .lean(),
-      Lead.countDocuments({ isArchived: false }),
+      Lead.countDocuments({ isArchived: false, assignedTo: req.user._id }),
+      // NEW: Recent Activity (Status changes + Notes)
+      Lead.aggregate([
+        { $match: { isArchived: false, assignedTo: req.user._id } },
+        {
+          $project: {
+            activities: {
+              $concatArrays: [
+                {
+                  $map: {
+                    input: "$statusHistory",
+                    as: "h",
+                    in: {
+                      type: "status_change",
+                      leadId: "$_id",
+                      leadName: { $concat: ["$firstName", " ", "$lastName"] },
+                      from: "$$h.from",
+                      to: "$$h.to",
+                      user: "$$h.changedByName",
+                      timestamp: "$$h.createdAt"
+                    }
+                  }
+                },
+                {
+                  $map: {
+                    input: "$notes",
+                    as: "n",
+                    in: {
+                      type: "note_added",
+                      leadId: "$_id",
+                      leadName: { $concat: ["$firstName", " ", "$lastName"] },
+                      text: "$$n.text",
+                      user: "$$n.addedByName",
+                      timestamp: "$$n.createdAt"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        { $unwind: "$activities" },
+        { $sort: { "activities.timestamp": -1 } },
+        { $limit: 10 },
+        { $replaceRoot: { newRoot: "$activities" } }
+      ]),
+      // NEW: Total Pipeline Value
+      Lead.aggregate([
+        { $match: { isArchived: false, assignedTo: req.user._id } },
+        { $group: { _id: null, totalValue: { $sum: '$leadValue' } } }
+      ])
     ]);
 
     // Shape status counts into a map
@@ -331,10 +387,12 @@ exports.getDashboardStats = async (req, res, next) => {
           converted,
           lost: byStatus.lost || 0,
           conversionRate: `${conversionRate}%`,
+          totalPipelineValue: valueStats[0]?.totalValue || 0,
         },
         bySource: sourceStats.reduce((acc, s) => { acc[s._id] = s.count; return acc; }, {}),
         leadsPerDay: dailyStats.map(d => ({ date: d._id, leads: d.count })),
         recentLeads,
+        recentActivity,
       },
     });
   } catch (error) {

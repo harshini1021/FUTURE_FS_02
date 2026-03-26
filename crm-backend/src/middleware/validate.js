@@ -27,11 +27,9 @@ const registerRules = [
   body('email')
     .trim()
     .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Must be a valid email')
     .normalizeEmail(),
   body('password')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain uppercase, lowercase, and a number'),
+    .isLength({ min: 3 }).withMessage('Password must be at least 3 characters'),
   body('role')
     .optional()
     .isIn(['admin', 'manager', 'viewer']).withMessage('Invalid role'),
@@ -39,7 +37,7 @@ const registerRules = [
 ];
 
 const loginRules = [
-  body('email').trim().notEmpty().withMessage('Email is required').isEmail().normalizeEmail(),
+  body('email').trim().notEmpty().withMessage('Email is required').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required'),
   validate,
 ];

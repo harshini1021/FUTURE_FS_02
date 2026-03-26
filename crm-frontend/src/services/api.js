@@ -107,6 +107,9 @@ export const authAPI = {
   getMe: () =>
     api.get('/auth/me'),
 
+  getUsers: () =>
+    api.get('/auth/users'),
+
   changePassword: (currentPassword, newPassword) =>
     api.patch('/auth/change-password', { currentPassword, newPassword }),
 };
